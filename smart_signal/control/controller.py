@@ -1,34 +1,38 @@
 # smart_signal/control/controller.py
-import time
-from typing import Dict, Optional
 
-class VisualController:
-    """
-    Plays out green times per lane_id over time and exposes current 'green' lanes.
-    This is a simple visual simulator, not a hardware controller.
-    """
-    def __init__(self):
-        self._schedule: Dict[str, float] = {}
-        self._start_ts: Optional[float] = None
-        self._order: Optional[list] = None
+class PriorityCycleController:
+    def __init__(self, approaches=["N","E","S","W"], min_green=8, max_green=30, yellow=3):
+        self.approaches = approaches
+        self.min_green = min_green
+        self.max_green = max_green
+        self.yellow = yellow
+        self.priority_list = []
+        self.current_idx = 0
 
-    def load_splits(self, greens_s: Dict[str, float]):
-        # Define a deterministic order for playback
-        self._order = sorted(greens_s.keys())
-        self._schedule = greens_s
-        self._start_ts = time.time()
+    def start_cycle(self, counts):
+        # Snapshot: sort approaches by vehicle count (descending)
+        self.priority_list = sorted(
+            self.approaches,
+            key=lambda a: counts.get(a, 0),
+            reverse=True
+        )
+        self.current_idx = 0
 
-    def current_green(self) -> Optional[str]:
-        if not self._order or not self._start_ts:
-            return None
-        t = time.time() - self._start_ts
-        # cycle through lanes by their green durations
-        elapsed = 0.0
-        for lane_id in self._order:
-            g = self._schedule.get(lane_id, 0.0)
-            if t < elapsed + g:
-                return lane_id
-            elapsed += g
-        # if cycle finished, restart
-        self._start_ts = time.time()
-        return self._order[0] if self._order else None
+    def next_phase(self, counts):
+        # If no active cycle, start one
+        if not self.priority_list:
+            self.start_cycle(counts)
+
+        approach = self.priority_list[self.current_idx]
+        count = counts.get(approach, 0)
+
+        # Allocate green proportional to count, bounded
+        green = max(self.min_green, min(self.max_green, count * 2))
+        yellow = self.yellow
+
+        self.current_idx += 1
+        if self.current_idx >= len(self.priority_list):
+            # End of cycle → reset
+            self.priority_list = []
+
+        return approach, green, yellow

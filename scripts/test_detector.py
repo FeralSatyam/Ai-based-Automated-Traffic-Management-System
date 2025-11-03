@@ -4,8 +4,8 @@ from smart_signal.perception.detector import StubDetector
 from smart_signal.perception.detector import StubDetector, YOLODetector
 
 def main():
-    #cam = CameraStream(0, fps=15)  # webcam
-    cam = CameraStream("assets/car_moving.mp4", fps=15)
+    cam = CameraStream(0, fps=15)  # webcam
+    #cam = CameraStream("assets/car_moving.mp4", fps=15)
     detector = StubDetector()
 
     for fid, ts, frame in cam.frames():

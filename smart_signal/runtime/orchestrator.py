@@ -25,30 +25,39 @@ class Orchestrator:
     def run(self):
         print("Starting orchestrator loop...")
         for fid, ts, frame in self.cam.frames():
-            # 1) Detect vehicles
-            detections = self.detector.infer(frame, fid, "N")  # TODO: map approach_id per camera
+            # 1) Detect vehicles with placeholder approach_id
+            raw_detections = self.detector.infer(frame, fid, "unknown")
 
-            # 2) Track vehicles
+            # Map each detection to an approach
+            for det in raw_detections:
+                cx = (det.bbox[0] + det.bbox[2]) / 2
+                cy = (det.bbox[1] + det.bbox[3]) / 2
+                det.approach_id = self.lane_mapper.get_approach_for_point(cx, cy)
+
+        # Filter out anything not in a lane polygon
+            detections = [d for d in raw_detections if d.approach_id != "unknown"]
+
+        # 2) Track vehicles
             tracks = self.tracker.update(detections, fid)
 
-            # 3) Map to lanes
+        # 3) Map to lanes
             lane_assignments = self.lane_mapper.assign_tracks(tracks)
             lane_stats = self.lane_mapper.compute_lane_stats(lane_assignments)
 
-            # 4) Get emergency events (placeholder: none for now)
-            emergencies = []  # Could be populated from GPS/V2X feed
+        # 4) Get emergency events (placeholder: none for now)
+            emergencies = []
 
-            # 5) Optimise signal timings
+        # 5) Optimise signal timings
             splits = self.optimizer.compute_splits(lane_stats)
             splits = self.optimizer.apply_emergency_priority(splits, emergencies)
 
-            # 6) Draw overlay
+        # 6) Draw overlay
             self._draw_overlay(frame, lane_assignments, splits)
 
-            # 7) Show frame
+        # 7) Show frame
             cv2.imshow("Traffic AI Orchestrator", frame)
 
-            # 8) Quit key
+        # 8) Quit key
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 print("Stopping orchestrator...")
                 break

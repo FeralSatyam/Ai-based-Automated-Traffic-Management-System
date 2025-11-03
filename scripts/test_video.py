@@ -1,13 +1,10 @@
 
-
-
-
 import cv2
 from smart_signal.perception.camera import CameraStream
 from smart_signal.perception.detector import StubDetector
 
 def main():
-    cam = CameraStream("assets/vehicle.mp4", fps=15)
+    cam = CameraStream("assets/car_moving.mp4", fps=15)
     detector = StubDetector()
 
     for fid, ts, frame in cam.frames():

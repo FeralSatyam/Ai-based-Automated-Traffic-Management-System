@@ -4,7 +4,7 @@ import numpy as np
 from smart_signal.types import Detection, Track
 from smart_signal.utils.geometry import iou
 
-# ---------- Existing IOUTracker kept as-is ----------
+# ---------- IOUTracker (approach-aware) ----------
 class IOUTracker:
     def __init__(self, iou_thresh=0.3, max_age=10):
         self.iou_thresh = iou_thresh
@@ -18,7 +18,8 @@ class IOUTracker:
             best_iou = 0
             best_track = None
             for track in self.tracks:
-                if track.cls != det.cls:  # class-aware association
+                # ✅ Match only if same class AND same approach
+                if track.cls != det.cls or track.approach_id != det.approach_id:
                     continue
                 s = iou(track.bbox, det.bbox)
                 if s > best_iou:
@@ -29,8 +30,11 @@ class IOUTracker:
                 updated_tracks.append(best_track)
             else:
                 new_track = Track(
-                    track_id=self.next_id, bbox=det.bbox, cls=det.cls,
-                    approach_id=det.approach_id, last_seen_frame=frame_id
+                    track_id=self.next_id,
+                    bbox=det.bbox,
+                    cls=det.cls,
+                    approach_id=det.approach_id,
+                    last_seen_frame=frame_id
                 )
                 self.next_id += 1
                 updated_tracks.append(new_track)
@@ -39,8 +43,8 @@ class IOUTracker:
         self.tracks = [t for t in updated_tracks if frame_id - t.last_seen_frame <= self.max_age]
         return self.tracks
 
-# ---------- SORT-style tracker ----------
-# Minimal Kalman filter utilities (state: x,y,w,h,vx,vy,vw,vh)
+
+# ---------- SORT-style tracker (approach-aware) ----------
 class KalmanBox:
     def __init__(self, bbox: Tuple[float,float,float,float]):
         self._init_state(bbox)
@@ -69,7 +73,7 @@ class KalmanBox:
 
     def update(self, bbox: Tuple[float,float,float,float]):
         x1, y1, x2, y2 = bbox
-        z = np.array([ (x1+x2)/2, (y1+y2)/2, (x2-x1), (y2-y1) ], dtype=float)
+        z = np.array([(x1+x2)/2, (y1+y2)/2, (x2-x1), (y2-y1)], dtype=float)
         S = self.H @ self.P @ self.H.T + self.R
         K = self.P @ self.H.T @ np.linalg.inv(S)
         y = z - self.H @ self.x
@@ -82,6 +86,7 @@ class KalmanBox:
         x1, y1 = x - w/2, y - h/2
         x2, y2 = x + w/2, y + h/2
         return (float(x1), float(y1), float(x2), float(y2))
+
 
 class _STrack:
     def __init__(self, track_id: int, det: Detection):
@@ -101,6 +106,7 @@ class _STrack:
     def bbox(self) -> Tuple[float,float,float,float]:
         return self.kf.bbox()
 
+
 class SORTTracker:
     def __init__(self, iou_thresh=0.3, max_age=15):
         self.iou_thresh = iou_thresh
@@ -113,20 +119,20 @@ class SORTTracker:
         for t in self._tracks:
             t.predict()
 
-        # Build IoU cost matrix class-aware
+        # Build IoU cost matrix (class + approach aware)
         if len(self._tracks) and len(detections):
             cost = np.zeros((len(self._tracks), len(detections)), dtype=float)
             for i, t in enumerate(self._tracks):
                 tb = t.bbox()
                 for j, d in enumerate(detections):
-                    if t.cls != d.cls:
-                        cost[i, j] = 1.0  # low IoU => force non-match
+                    if t.cls != d.cls or t.approach_id != d.approach_id:
+                        cost[i, j] = 1.0  # force non-match
                     else:
                         cost[i, j] = 1.0 - iou(tb, d.bbox)
         else:
             cost = np.empty((0, 0))
 
-        # Greedy assign (for simplicity)
+        # Greedy assign
         assigned_t, assigned_d = set(), set()
         pairs = []
         if cost.size:
@@ -162,7 +168,10 @@ class SORTTracker:
         out: List[Track] = []
         for t in self._tracks:
             out.append(Track(
-                track_id=t.id, bbox=t.bbox(), cls=t.cls,
-                approach_id=t.approach_id, last_seen_frame=t.last_seen_frame
+                track_id=t.id,
+                bbox=t.bbox(),
+                cls=t.cls,
+                approach_id=t.approach_id,
+                last_seen_frame=t.last_seen_frame
             ))
         return out

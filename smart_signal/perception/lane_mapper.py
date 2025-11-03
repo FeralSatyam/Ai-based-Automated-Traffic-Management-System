@@ -1,80 +1,25 @@
-import json
-from shapely.geometry import Polygon, Point
+# smart_signal/perception/lane_mapper.py
 
-from shapely.geometry import Point
+from typing import List, Dict, Tuple
+from smart_signal.control.config import LANE_ROIS
+import numpy as np
 
-from typing import Dict, List
-from smart_signal.types import Track, LaneStat
+def bbox_centroid(bbox: Tuple[float, float, float, float]) -> Tuple[int, int]:
+    x1, y1, x2, y2 = bbox
+    cx = int((x1 + x2) / 2)
+    cy = int((y1 + y2) / 2)
+    return cx, cy
 
-class LaneMapper:
-    """
-    Maps tracked vehicles to lanes using lane polygons from a GeoJSON file.
-    """
-    def __init__(self, geojson_path: str):
-        self.lane_polygons: Dict[str, Polygon] = {}
-        self.lane_meta: Dict[str, dict] = {}
-        self._load_geojson(geojson_path)
+def point_in_rect(px: int, py: int, x1: int, y1: int, x2: int, y2: int) -> bool:
+    return (x1 <= px <= x2) and (y1 <= py <= y2)
 
-    def _load_geojson(self, path: str):
-        with open(path, "r") as f:
-            data = json.load(f)
-        for feat in data["features"]:
-            if feat["properties"].get("type") == "lane":
-                lane_id = feat["properties"]["lane_id"]
-                approach_id = feat["properties"]["approach_id"]
-                movement = feat["properties"]["movement"]
-                poly = Polygon(feat["geometry"]["coordinates"][0])
-                self.lane_polygons[lane_id] = poly
-                self.lane_meta[lane_id] = {
-                    "approach_id": approach_id,
-                    "movement": movement
-                }
-
-    def assign_tracks(self, tracks: List[Track]) -> Dict[str, List[Track]]:
-        """
-        Returns a dict: lane_id -> list of tracks inside that lane polygon.
-        """
-        lane_assignments: Dict[str, List[Track]] = {lid: [] for lid in self.lane_polygons}
-        for tr in tracks:
-            cx = (tr.bbox[0] + tr.bbox[2]) / 2
-            cy = (tr.bbox[1] + tr.bbox[3]) / 2
-            point = Point(cx, cy)
-            for lane_id, poly in self.lane_polygons.items():
-                if poly.contains(point):
-                    lane_assignments[lane_id].append(tr)
-                    break
-        return lane_assignments
-
-     
-
-    def compute_lane_stats(self, lane_assignments: Dict[str, List[Track]]) -> List[LaneStat]:
-        stats = []
-        for lane_id, tracks in lane_assignments.items():
-            meta = self.lane_meta[lane_id]
-            queue_len = len(tracks)
-            arrival_rate = queue_len * 3600 / 60
-            occupancy = min(queue_len / 10.0, 1.0)
-            spillback = queue_len > 8
-            stats.append(
-                LaneStat(
-                    approach_id=meta["approach_id"],
-                    lane_id=lane_id,
-                    movement=meta["movement"],
-                    queue_len=queue_len,
-                    arrival_rate_vph=arrival_rate,
-                    occupancy=occupancy,
-                    spillback=spillback
-                )
-            )
-        return stats
-
-    def get_approach_for_point(self, x: float, y: float) -> str:
-        """
-        Given a point (pixel coords), return the approach_id of the lane polygon it falls into.
-        Returns 'unknown' if no match.
-        """
-        pt = Point(x, y)
-        for lane_id, poly in self.lane_polygons.items():
-            if poly.contains(pt):
-                return self.lane_meta[lane_id]["approach_id"]
-        return "unknown"
+def count_by_lane(tracks: List) -> Dict[str, int]:
+    # tracks: objects with .bbox and .track_id
+    counts = {roi.approach: 0 for roi in LANE_ROIS}
+    for tr in tracks:
+        cx, cy = bbox_centroid(tr.bbox)
+        for roi in LANE_ROIS:
+            if point_in_rect(cx, cy, roi.x1, roi.y1, roi.x2, roi.y2):
+                counts[roi.approach] += 1
+                break
+    return counts
