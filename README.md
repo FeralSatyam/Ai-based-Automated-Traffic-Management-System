@@ -11,9 +11,7 @@ The system uses real-time video processing to detect vehicles, track their movem
 - Real-time vehicle detection using YOLOv8
 - Multi-lane traffic monitoring
 - Intelligent traffic signal timing optimization
-- Web-based visualization dashboard
 - Traffic simulation for testing scenarios
-- Intersection geometry mapping
 
 ## 🛠️ Technologies Used
 
@@ -86,12 +84,6 @@ Team Quantum Coders:
 - Shreejesh Raj Joshi
 - Aarush Bhujel
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
 
 ## 📄 License
 
