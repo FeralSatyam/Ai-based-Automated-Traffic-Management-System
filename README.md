@@ -77,12 +77,6 @@ The system can be configured through `config/config.yaml`. Key settings include:
 - Simulation settings
 
 
-## 👥 Team Members
-
-Team Quantum Coders:
-- Satyam Rana
-- Shreejesh Raj Joshi
-- Aarush Bhujel
 
 
 ## 📄 License
@@ -93,4 +87,3 @@ This project is licensed under the MIT License.
 
 - YOLOv8 team for the object detection model
 - OpenCV community
-- Codarambha Hackathon organizers
