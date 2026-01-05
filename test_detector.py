@@ -92,7 +92,7 @@ class TrackerUI(ctk.CTk):
             self.status_label.configure(text="Running...")
             self.detector = YOLODetector(model_path="yolov8n.pt", conf_thresh=0.3)
             self.tracker = IOUTracker(iou_thresh=0.3, max_age=10)
-            self.cam = CameraStream(1, fps=30)  # webcam or video path
+            self.cam = CameraStream(0, fps=30)  # webcam or video path
             threading.Thread(target=self.loop, daemon=True).start()
 
     def stop_cam(self):

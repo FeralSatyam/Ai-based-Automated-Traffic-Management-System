@@ -6,9 +6,10 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 SCRIPTS = {
-    "Traffic Detection": os.path.join(BASE_DIR, "demo_4_lanes.py"),
+    "4 Lane Traffic Detection": os.path.join(BASE_DIR, "test_4_lanes_traffic.py"),
+    "Traffic Detection Live Video": os.path.join(BASE_DIR, "demo_4_lanes.py"),
     "Vehicle Detection (Camera)": os.path.join(BASE_DIR, "test_detector.py"),
-    "2D Simulation": os.path.join(BASE_DIR, "traffic_sim_2d.py"),
+    "2D Simulation": os.path.join(BASE_DIR, "test_2d_simulation.py"),
 }
 
 def run_script(script_path):
