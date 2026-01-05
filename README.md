@@ -11,9 +11,7 @@ The system uses real-time video processing to detect vehicles, track their movem
 - Real-time vehicle detection using YOLOv8
 - Multi-lane traffic monitoring
 - Intelligent traffic signal timing optimization
-- Web-based visualization dashboard
 - Traffic simulation for testing scenarios
-- Intersection geometry mapping
 
 ## 🛠️ Technologies Used
 
@@ -79,19 +77,7 @@ The system can be configured through `config/config.yaml`. Key settings include:
 - Simulation settings
 
 
-## 👥 Team Members
 
-Team Quantum Coders:
-- Satyam Rana
-- Shreejesh Raj Joshi
-- Aarush Bhujel
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
 
 ## 📄 License
 
@@ -101,4 +87,3 @@ This project is licensed under the MIT License.
 
 - YOLOv8 team for the object detection model
 - OpenCV community
-- Codarambha Hackathon organizers
