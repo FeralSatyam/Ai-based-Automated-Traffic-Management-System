@@ -25,8 +25,8 @@ The system uses real-time video processing to detect vehicles, track their movem
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/FeralSatyam/Codarambha_Quantum-Coders.git
-cd Codarambha_Quantum-Coders
+git clone https://github.com/FeralSatyam/Ai-based-Automated-Traffic-Management-System
+cd Ai-based-Automated-Traffic-Management-System Public
 ```
 
 2. **Install dependencies**
